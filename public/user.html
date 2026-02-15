@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Profile | MiniBlog</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #0f0f0f;
+    color: #e4e6eb;
+}
+
+header {
+    background: #1a1a1b;
+    padding: 12px 24px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+nav a {
+    color: #ccc;
+    margin-left: 14px;
+    text-decoration: none;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 16px;
+}
+
+.profile-card {
+    background: #1a1a1b;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.profile-header img {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+}
+
+.stats {
+    margin-top: 12px;
+    display: flex;
+    gap: 25px;
+}
+
+.post {
+    background: #1a1a1b;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.actions button {
+    background: #2d2d2d;
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <img src="https://picsum.photos/80" class="logo"/>
+    <div></div>
+    <nav>
+        <a href="home.html">Home</a>
+        <a id="logoutBtn">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+
+    <!-- PROFILE CARD -->
+    <div class="profile-card">
+        <div class="profile-header">
+            <img src="https://picsum.photos/100?random=5">
+            <div>
+                <h2 id="username">Loading...</h2>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div>Posts: <strong id="totalPosts">0</strong></div>
+            <div>Likes Received: <strong id="totalLikes">0</strong></div>
+        </div>
+    </div>
+
+    <!-- USER POSTS -->
+    <div id="userPosts"></div>
+
+</div>
+
+<script>
+const logoutBtn = document.getElementById("logoutBtn");
+
+logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+});
+
+async function loadProfile() {
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Get user info
+    const meRes = await fetch("/api/user/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    const meData = await meRes.json();
+    document.getElementById("username").innerText = meData.user.username;
+
+    // Get stats
+    const statsRes = await fetch("/api/user/stats", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    const stats = await statsRes.json();
+    document.getElementById("totalPosts").innerText = stats.totalPosts;
+    document.getElementById("totalLikes").innerText = stats.totalLikes;
+
+    // Get user posts
+    const postsRes = await fetch("/api/user/my_posts", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    const posts = await postsRes.json();
+    renderPosts(posts);
+}
+
+function renderPosts(posts) {
+    posts = posts.posts;
+
+    const container = document.getElementById("userPosts");
+    container.innerHTML = "";
+
+    if (posts.length === 0) {
+        container.innerHTML = "<p>No posts yet.</p>";
+        return;
+    }
+
+    posts.forEach(post => {
+
+        const div = document.createElement("div");
+        div.className = "post";
+
+        div.innerHTML = `
+            <h3>${post.title}</h3>
+            <p>${post.content}</p>
+
+            <div class="actions">
+                <button>👍 ${post.likes_count}</button>
+                <button>👎 ${post.dislikes_count}</button>
+            </div>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", loadProfile);
+</script>
+
+</body>
+</html>

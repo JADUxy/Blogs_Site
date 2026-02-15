@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Post | MiniBlog</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f0f0f;
+            color: #e4e6eb;
+        }
+
+        header {
+            background: #1a1a1b;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        nav a {
+            color: #ccc;
+            margin-left: 14px;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        .editor-card {
+            background: #1a1a1b;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: #141414;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        button {
+            background: #2d2d2d;
+            border: none;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+        }
+
+        .preview {
+            margin-top: 20px;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div><strong>MiniBlog</strong></div>
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="user.html">Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+
+        <div class="editor-card">
+            <h2>Create Post</h2>
+
+            <input type="text" id="title" placeholder="Title of your post..." />
+
+            <textarea id="content" placeholder="Write your content here..."></textarea>
+
+            <input type="text" id="imageUrl" placeholder="Optional image URL..." />
+
+            <button id="submitPost">Submit Post</button>
+
+            <div class="preview" id="preview"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const submitBtn = document.getElementById("submitPost");
+        const previewDiv = document.getElementById("preview");
+        const imageInput = document.getElementById("imageUrl");
+
+        // Live image preview
+        imageInput.addEventListener("input", () => {
+            const url = imageInput.value.trim();
+            previewDiv.innerHTML = "";
+
+            if (url) {
+                const img = document.createElement("img");
+                img.src = url;
+                previewDiv.appendChild(img);
+            }
+        });
+
+        // Submit Post
+        let isSubmitting = false;
+
+        submitBtn.addEventListener("click", async () => {
+
+            if (isSubmitting) return; // 🚫 Prevent double click
+            isSubmitting = true;
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Posting...";
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                alert("Please login first");
+                window.location.href = "login.html";
+                return;
+            }
+
+            const title = document.getElementById("title").value.trim();
+            const content = document.getElementById("content").value.trim();
+            const imageUrl = document.getElementById("imageUrl").value.trim();
+
+            if (!title || !content) {
+                alert("Title and content are required");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Submit Post";
+                isSubmitting = false;
+                return;
+            }
+
+            const finalContent = imageUrl
+                ? content + `\n\n![image](${imageUrl})`
+                : content;
+
+            try {
+                const res = await fetch("/api/posts", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        content: finalContent
+                    })
+                });
+
+                if (!res.ok) {
+                    throw new Error("Failed");
+                }
+
+                alert("Post created successfully!");
+                window.location.href = "home.html";
+
+            } catch (err) {
+                alert("Failed to create post");
+
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Submit Post";
+                isSubmitting = false;
+            }
+        });
+
+
+
+    </script>
+
+</body>
+
+</html>

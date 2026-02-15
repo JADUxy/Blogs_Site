@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register | MiniBlog</title>
+
+    <style>
+        /* ===== GLOBAL ===== */
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f0f0f;
+            color: #e4e6eb;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            background: #1a1a1b;
+            padding: 12px 24px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+
+        /* ===== CENTER ===== */
+        .wrapper {
+            height: calc(100vh - 60px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            width: 360px;
+            background: #1a1a1b;
+            padding: 28px;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .card h2 {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        /* inputs */
+        input {
+            width: 95%;
+            margin-bottom: 12px;
+            padding: 9px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #141414;
+            color: white;
+        }
+
+        /* buttons */
+        button {
+            width: 100%;
+            padding: 9px;
+            border-radius: 6px;
+            border: none;
+            background: #2979ff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #2d2d2d;
+            flex: 1;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #ff4d4d;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background: #1a1a1b;
+            padding: 22px;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+            text-align: center;
+            animation: pop 0.2s ease;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* OTP BLOCKS */
+        .otp-boxes {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            margin: 14px 0;
+        }
+
+        .otp-boxes input {
+            width: 42px;
+            height: 45px;
+            text-align: center;
+            font-size: 18px;
+            background: #141414;
+            border: 1px solid #333;
+            border-radius: 6px;
+        }
+
+        /* horizontal buttons */
+        .row-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .timer {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <img src="https://picsum.photos/80" class="logo">
+    </header>
+
+
+    <div class="wrapper">
+        <div class="card">
+            <h2>Create Account</h2>
+
+            <input id="username" placeholder="Username">
+            <input id="email" placeholder="Email">
+            <input id="password" type="password" placeholder="Password">
+
+            <button onclick="register()">Register</button>
+
+            <div id="registerError" class="error"></div>
+        </div>
+    </div>
+
+
+    <!-- ===== OTP MODAL ===== -->
+    <div class="modal" id="otpModal">
+        <div class="modal-card">
+
+            <h3>Verify OTP</h3>
+
+            <div class="otp-boxes" id="otpBoxes">
+                <input maxlength="1">
+                <input maxlength="1">
+                <input maxlength="1">
+                <input maxlength="1">
+                <input maxlength="1">
+                <input maxlength="1">
+            </div>
+
+            <button onclick="verifyOtp()">Submit</button>
+
+            <div class="row-buttons">
+                <button id="resendBtn" class="secondary" onclick="resendOtp()" disabled>Resend</button>
+                <button class="secondary" onclick="closeModal()">Back</button>
+            </div>
+
+            <div class="timer" id="timerText">Resend available in 60s</div>
+            <div id="otpError" class="error"></div>
+
+        </div>
+    </div>
+
+
+    <script>
+        /* ================= SIMULATION ================= */
+        let generatedOTP = null;
+        let timer = 60;
+        let interval;
+
+        function fakeSendOtp() {
+            generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+            console.log("OTP:", generatedOTP);
+        }
+
+        /* ================= REGISTER ================= */
+        async function register() {
+            if (!username.value || !email.value || !password.value) {
+                registerError.innerText = "Fill all fields";
+                return;
+            }
+
+            const payload = {
+                username: username.value,
+                email: email.value,
+                password: password.value
+            }
+
+            const res = await fetch("/api/auth/register", {
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json();
+
+            console.log(data);
+
+            if (data.status) {
+                otpModal.style.display = "flex";
+                startTimer();
+            }
+            else {
+                registerError.innerText = data.message;
+                fakeSendOtp();
+            }
+
+
+
+        }
+
+        /* ================= TIMER ================= */
+        function startTimer() {
+            timer = 60;
+            resendBtn.disabled = true;
+
+            interval = setInterval(() => {
+                timer--;
+                timerText.innerText = "Resend available in " + timer + "s";
+
+                if (timer <= 0) {
+                    clearInterval(interval);
+                    resendBtn.disabled = false;
+                    timerText.innerText = "You can resend OTP now";
+                }
+            }, 1000);
+        }
+
+        /* ================= OTP INPUT AUTO FOCUS ================= */
+        document.querySelectorAll("#otpBoxes input").forEach((box, i, arr) => {
+            box.addEventListener("input", () => {
+                if (box.value && arr[i + 1]) arr[i + 1].focus();
+            });
+        });
+
+        /* ================= VERIFY ================= */
+        async function verifyOtp() {
+            const otp = [...document.querySelectorAll("#otpBoxes input")]
+                .map(i => i.value).join("");
+
+            const payload = {
+                email: email.value,
+                otp: otp
+            }
+            
+            const res = await fetch("/api/auth/verify-otp",{
+                headers: {"Content-Type": "application/json"},
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json();
+
+            if (data.status) {
+                localStorage.setItem("token", data.token);
+                window.location.href = "/home.html";
+            } else {
+                otpError.innerText = data.message;
+            }
+        }
+
+        /* ================= RESEND ================= */
+        function resendOtp() {
+            fakeSendOtp();
+            otpError.innerText = "OTP resent";
+            startTimer();
+        }
+
+        /* ================= CLOSE ================= */
+        function closeModal() {
+            otpModal.style.display = "none";
+        }
+    </script>
+
+</body>
+
+</html>

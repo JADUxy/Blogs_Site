@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | MiniBlog</title>
+
+    <style>
+        /* ===== GLOBAL ===== */
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f0f0f;
+            color: #e4e6eb;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            background: #1a1a1b;
+            padding: 12px 24px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+
+        /* ===== CENTER WRAPPER ===== */
+        .wrapper {
+            height: calc(100vh - 60px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            width: 360px;
+            background: #1a1a1b;
+            padding: 28px;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .card h2 {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        /* ===== INPUTS ===== */
+        input {
+            width: 95%;
+            margin-bottom: 12px;
+            padding: 9px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #141414;
+            color: white;
+        }
+
+        /* ===== BUTTON ===== */
+        button {
+            width: 100%;
+            padding: 9px;
+            border-radius: 6px;
+            border: none;
+            background: #2979ff;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* ===== LINK ===== */
+        .link {
+            text-align: center;
+            font-size: 13px;
+            margin-top: 12px;
+            color: #aaa;
+        }
+
+        .link a {
+            color: #6aa9ff;
+            text-decoration: none;
+        }
+
+        /* ===== ERROR ===== */
+        .error {
+            color: #ff4d4d;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <img src="https://picsum.photos/80" class="logo">
+    </header>
+
+
+    <div class="wrapper">
+
+        <div class="card">
+            <h2>Login</h2>
+
+            <input id="email" placeholder="Email">
+            <input id="password" type="password" placeholder="Password">
+
+            <button onclick="login()">Login</button>
+
+            <div id="loginError" class="error"></div>
+
+            <div class="link">
+                Don’t have an account?
+                <a href="/register.html">Register</a>
+            </div>
+        </div>
+
+    </div>
+
+
+    <script>
+        /* ================= SIMULATED BACKEND ================= */
+        /* fake stored user for demo */
+        const demoUser = {
+            email: "test@mail.com",
+            password: "123456"
+        };
+
+
+        /* ================= LOGIN ================= */
+        async function login() {
+
+            const e = email.value.trim();
+            const p = password.value.trim();
+
+            if (!e || !p) {
+                loginError.innerText = "Fill all fields";
+                return;
+            }
+            const payload = {
+                username: e,
+                password: p
+            }
+            const req = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await req.json();
+            if (data.status) {
+                alert("redirection to home")
+                localStorage.setItem("token",data.token);
+                window.location.href = "/home.html";
+            }
+            else {
+                loginError.innerText = data.message;
+            }
+
+
+        }
+
+
+        /* ================= AUTO REDIRECT IF LOGGED IN ================= */
+        if (localStorage.token) {
+            window.location.href = "/home.html";
+        }
+    </script>
+
+</body>
+
+</html>
