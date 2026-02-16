@@ -121,3 +121,29 @@ export function getComments(req,res){
         comments: buildCommentTree(comments)
     })
 }
+
+export function createComment(req,res){
+    const {content, postId, parentId} = req.body;
+    const userId = req.user.id;
+    if(!content || !userId || !postId){
+        return res.status(400).json({
+            status: false,
+            message: "Missing Field"
+        })
+    }
+
+    try {
+        const result = postService.createComment(content,userId,postId,parentId);
+        res.json({
+            status: true,
+            message: result
+        })
+    } catch (error) {
+        res.status(400).json({
+            status: false,
+            message: "cant create the comment"
+        })
+    }
+
+
+}

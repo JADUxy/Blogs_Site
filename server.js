@@ -3,15 +3,11 @@ dotenv.config();
 import express from "express";
 import router from "./routes/index.route.js"
 import path from "path"
-import seedDatabase from "./seed.js";
-import db from "./db.js";
-// seedDatabase();
 
 let app = express();
 const PORT = process.env.PORT || 3000;
 const __dirname = import.meta.dirname;
 
-console.log(db.prepare("SELECT * FROM users").all());
 
 
 

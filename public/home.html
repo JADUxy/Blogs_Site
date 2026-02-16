@@ -249,6 +249,60 @@
             font-size: 12px;
         }
     </style>
+    
+<style>
+.add-root-comment {
+    margin-top: 20px;
+    padding: 15px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.add-root-comment textarea {
+    width: 100%;
+    resize: none;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.add-root-comment textarea:focus {
+    border-color: #4f8cff;
+    box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.2);
+}
+
+.add-root-comment button {
+    align-self: flex-end;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background-color: #4f8cff;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.add-root-comment button:hover {
+    background-color: #3a73e0;
+}
+
+.add-root-comment button:active {
+    transform: scale(0.97);
+}
+</style>
+
+
 </head>
 
 <body>

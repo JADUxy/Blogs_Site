@@ -220,7 +220,7 @@ export function toggleReaction(postId, userId, type) {
 export function searchPosts(keyword) {
     const likePattern = `%${keyword}%`;
 
-    const posts =  db.prepare(`
+    const posts = db.prepare(`
         SELECT posts.*, users.username
         FROM posts
         JOIN users ON posts.user_id = users.id
@@ -231,18 +231,7 @@ export function searchPosts(keyword) {
     return posts;
 }
 
-export async function createComment(req, res) {
-    const { content } = req.body;
-    const { postId } = req.params;
-    const userId = req.user.id;
 
-    await db.run(`
-        INSERT INTO comments (content, user_id, post_id, parent_id)
-        VALUES (?, ?, ?, NULL)
-    `, [content, userId, postId]);
-
-    res.json({ success: true });
-}
 export async function createReply(req, res) {
     const { content, parent_id } = req.body;
     const { postId } = req.params;
@@ -272,4 +261,31 @@ export function getComments(postId) {
 
     return comments;
 }
+
+
+export function createComment(content, userId, postId, parentId = null) {
+
+    const sql = `
+        INSERT INTO comments (content, user_id, post_id, parent_id)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    const stmt = db.prepare(sql);
+
+    const result = stmt.run(
+        content,
+        userId,
+        postId,
+        parentId
+    );
+
+    return {
+        id: result.lastInsertRowid,
+        content,
+        user_id: userId,
+        post_id: postId,
+        parent_id: parentId
+    };
+}
+
 

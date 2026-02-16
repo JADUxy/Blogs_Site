@@ -66,59 +66,7 @@ async function loadPosts() {
 }
 
 
-/* ================= RENDER POSTS ================= */
-document.addEventListener("click", function (e) {
 
-    // When clicking Reply
-    if (e.target.classList.contains("reply-btn")) {
-        console.log("clicked")
-
-        const commentEl = e.target.closest(".comment");
-
-        // Prevent multiple input boxes
-        if (commentEl.querySelector(".reply-box")) return;
-
-        const replyBox = document.createElement("div");
-        replyBox.className = "reply-box";
-
-        replyBox.innerHTML = `
-            <input type="text" placeholder="Write a reply..." />
-            <button class="submit-reply">Post</button>
-        `;
-
-        commentEl.appendChild(replyBox);
-    }
-
-    // When clicking Post inside reply box
-    if (e.target.classList.contains("submit-reply")) {
-
-        const replyBox = e.target.closest(".reply-box");
-        const input = replyBox.querySelector("input");
-        const text = input.value.trim();
-
-        if (!text) return;
-
-        const commentEl = e.target.closest(".comment");
-
-        const newReply = document.createElement("div");
-        newReply.className = "comment reply";
-
-        newReply.innerHTML = `
-            <div class="comment-header">
-                You • Just now
-            </div>
-            ${text}
-            <div class="comment-actions">
-                <span>👍 0</span>
-                <span>Reply</span>
-            </div>
-        `;
-
-        commentEl.appendChild(newReply);
-
-        replyBox.remove(); // remove input after posting
-    }
-});
 
 
 function renderPosts(posts) {
@@ -234,7 +182,10 @@ function renderPosts(posts) {
                 </button>
             </div>
 
-            <div class="toggle">Show comments</div>
+            <div style="display: flex, gap: 10px">
+            <div class="toggle comment-toggle">Show comments</div>
+            <div class="toggle">Add </div>
+            </div>
 
 <div class="comments" style="display:none;">
 
@@ -349,13 +300,7 @@ document.addEventListener("click", async (e) => {
 
 /* ================= TOGGLE COMMENTS ================= */
 
-document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("toggle")) {
-        const comments = e.target.nextElementSibling;
-        comments.style.display =
-            comments.style.display === "block" ? "none" : "block";
-    }
-});
+
 
 /* ================= LOGIN / LOGOUT ================= */
 
@@ -463,7 +408,7 @@ searchInput.addEventListener("keydown", async (e) => {
     }
 });
 
-function renderNestedComments(comments, level = 0) {
+function renderNestedComments(comments, postId, level = 0) {
 
     return comments.map(comment => {
 
@@ -477,41 +422,136 @@ function renderNestedComments(comments, level = 0) {
 
                 ${comment.content}
 
-                <div class="comment-actions">
-                    <span class="reply-btn" data-id="${comment.id}">
+                <div class="comment-actions" post-id=${postId}>
+                    <span class="reply-btn" post-id=${postId} data-id="${comment.id}">
                         Reply
                     </span>
                 </div>
 
                 ${comment.replies && comment.replies.length > 0
-                    ? renderNestedComments(comment.replies, level + 1)
-                    : ""
-                }
+                ? renderNestedComments(comment.replies, postId, level + 1)
+                : ""
+            }
 
             </div>
         `;
 
     }).join("");
 }
+
+async function addComments(e) {
+
+    if (e.target.classList.contains("submit-reply")) {
+
+        if (!localStorage.getItem("token")) {
+            alert("Please login first");
+            return;
+        }
+
+        const replyBox = e.target.closest(".reply-box");
+        const input = replyBox.querySelector("input");
+        const content = input.value.trim();
+
+        if (!content) return;
+
+        const payload = {
+            postId: e.target.getAttribute("post_id"),
+            parentId: e.target.getAttribute("comment_id"),
+            content: content
+        }
+        console.log(payload);
+
+        try {
+            const res = await fetch("http://localhost:3000/api/posts/createComment", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (!res.status) {
+                alert("Failed to post comment");
+                return;
+            }
+
+            // reload comments after success
+
+            const postId = e.target.getAttribute("post_id");
+
+            // Find the CURRENT post in DOM (not using old reference)
+            const postEl = document.querySelector(`.like-btn[data-id="${postId}"]`)
+                ?.closest(".post");
+
+            if (!postEl) return;
+
+            const commentsDiv = postEl.querySelector(".comments");
+            const toggleBtn = postEl.querySelector(".comment-toggle");
+
+            await updateComments(commentsDiv, postId, toggleBtn);
+
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+}
+
+async function addComentRoot(postId, content) {
+    const payload = {
+        "content": content,
+        "postId": postId,
+        "parentId": undefined
+    }
+
+
+    const req = await fetch("http://localhost:3000/api/posts/createComment", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload)
+    })
+
+    const data = req.json();
+
+
+
+
+}
+async function handleAddRootCommment(e) {
+    console.log(e);
+    console.log(e.target)
+    console.log(e.target.parentNode);
+    console.log();
+    console.log();
+    await addComentRoot(e.target.getAttribute("post_id"), e.target.parentNode.childNodes[1].value);
+}
 document.addEventListener("click", async function (e) {
+    if (e.target.id === "addRootCommentBtn") {
+        handleAddRootCommment(e);
 
-    if (!e.target.classList.contains("toggle")) return;
-    console.log("i am inside toggle");
+        const postId = e.target.getAttribute("post_id");
 
-    const toggleBtn = e.target;
-    const commentsDiv = toggleBtn.nextElementSibling;
-    const postEl = toggleBtn.closest(".post");
+        // Find the CURRENT post in DOM (not using old reference)
+        const postEl = document.querySelector(`.like-btn[data-id="${postId}"]`)
+            ?.closest(".post");
 
-    // Get post id from like button (since you already store it there)
-    const postId = postEl.querySelector(".like-btn")?.dataset.id;
+        if (!postEl) return;
 
-    // // Toggle closed
-    // if (commentsDiv.style.display === "block") {
-    //     commentsDiv.style.display = "none";
-    //     toggleBtn.innerText = "Show comments";
-    //     return;
-    // }
+        const commentsDiv = postEl.querySelector(".comments");
+        const toggleBtn = postEl.querySelector(".comment-toggle");
 
+        await updateComments(commentsDiv, postId, toggleBtn);
+
+    }
+});
+async function updateComments(commentsDiv, postId, toggleBtn) {
     try {
         const res = await fetch(`/api/posts/comments/${postId}`);
         const data = await res.json();
@@ -519,8 +559,27 @@ document.addEventListener("click", async function (e) {
         if (!data.status) {
             commentsDiv.innerHTML = "<p>Failed to load comments</p>";
         } else {
-            commentsDiv.innerHTML = renderNestedComments(data.comments);
+
+            commentsDiv.innerHTML = renderNestedComments(data.comments, postId);
         }
+
+        const rootComment = document.createElement("div");
+        rootComment.innerHTML = `
+<div class="add-root-comment">
+    <textarea 
+        id="rootCommentInput" 
+        placeholder="Write a comment..." 
+        rows="2"
+    ></textarea>
+
+    <button post_id=${postId}  id="addRootCommentBtn">
+        Post Comment
+    </button>
+</div>
+        `
+
+        commentsDiv.appendChild(rootComment);
+
 
         commentsDiv.style.display = "block";
         toggleBtn.innerText = "Hide comments";
@@ -529,5 +588,92 @@ document.addEventListener("click", async function (e) {
         console.error(err);
         commentsDiv.innerHTML = "<p>Error loading comments</p>";
         commentsDiv.style.display = "block";
+    }
+}
+async function showComment(e) {
+    if (!e.target.classList.contains("comment-toggle")) return;
+    console.log("i am inside toggle");
+
+    const toggleBtn = e.target;
+    const commentsDiv = toggleBtn.parentNode.nextElementSibling;
+    const postEl = toggleBtn.closest(".post");
+
+    // Get post id from like button (since you already store it there)
+    const postId = postEl.querySelector(".like-btn")?.dataset.id;
+
+    // // Toggle closed
+    if (commentsDiv.style.display === "block") {
+        commentsDiv.style.display = "none";
+        toggleBtn.innerText = "Show comments";
+        return;
+    }
+
+    updateComments(commentsDiv, postId, toggleBtn);
+}
+document.addEventListener("click", async function (e) {
+
+    addComments(e);
+    showComment(e);
+
+
+});
+
+
+
+
+/* ================= RENDER POSTS ================= */
+document.addEventListener("click", function (e) {
+
+    // When clicking Reply
+    if (e.target.classList.contains("reply-btn")) {
+        console.log("clicked")
+
+        const commentEl = e.target.closest(".comment");
+
+        // Prevent multiple input boxes
+        if (commentEl.querySelector(".reply-box")) return;
+
+        const replyBox = document.createElement("div");
+        replyBox.className = "reply-box";
+        console.log(e.target.innerHTML);
+        console.log(e.target.getAttribute("post-id"));
+        console.log(e.target.getAttribute("data-id"));
+        console.log(e.target.attributes["post-id"][0]);
+
+        replyBox.innerHTML = `
+            <input type="text" placeholder="Write a reply..." />
+            <button comment_id=${e.target.getAttribute("data-id")} post_id=${e.target.getAttribute("post-id")} class="submit-reply">Post</button>
+        `;
+
+        commentEl.appendChild(replyBox);
+    }
+
+    // When clicking Post inside reply box
+    if (e.target.classList.contains("submit-reply")) {
+
+        const replyBox = e.target.closest(".reply-box");
+        const input = replyBox.querySelector("input");
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        const commentEl = e.target.closest(".comment");
+
+        const newReply = document.createElement("div");
+        newReply.className = "comment reply";
+
+        newReply.innerHTML = `
+            <div class="comment-header">
+                You • Just now
+            </div>
+            ${text}
+            <div class="comment-actions">
+                <span>👍 0</span>
+                <span>Reply</span>
+            </div>
+        `;
+
+        commentEl.appendChild(newReply);
+
     }
 });
